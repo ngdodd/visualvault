@@ -1,0 +1,131 @@
+# VisualVault Docker Compose Configuration
+#
+# Usage:
+#   Development: docker-compose up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+services:
+  # ===================
+  # FastAPI Application
+  # ===================
+  api:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload in development
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      # Persist storage
+      - ./storage:/app/storage
+      - ./models:/app/models
+    environment:
+      - DEBUG=true
+      - ENVIRONMENT=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=visualvault
+      - DB_PASSWORD=visualvault
+      - DB_NAME=visualvault
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===================
+  # Celery Worker
+  # ===================
+  worker:
+    build:
+      context: .
+      target: development
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    volumes:
+      - ./app:/app/app:ro
+      - ./storage:/app/storage
+      - ./models:/app/models
+    environment:
+      - DEBUG=true
+      - ENVIRONMENT=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=visualvault
+      - DB_PASSWORD=visualvault
+      - DB_NAME=visualvault
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Worker doesn't need health check exposed
+
+  # ===================
+  # PostgreSQL Database
+  # ===================
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=visualvault
+      - POSTGRES_PASSWORD=visualvault
+      - POSTGRES_DB=visualvault
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U visualvault -d visualvault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ===================
+  # Redis (Cache + Celery Broker)
+  # ===================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # ===================
+  # Flower (Celery Monitoring) - Optional
+  # ===================
+  flower:
+    build:
+      context: .
+      target: development
+    command: celery -A app.workers.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+      - worker
+    profiles:
+      - monitoring  # Only start with: docker-compose --profile monitoring up
+
+volumes:
+  postgres_data:
+  redis_data:

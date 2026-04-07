@@ -1,0 +1,276 @@
+"""
+Health Check Endpoints
+
+This module demonstrates:
+- Simple and detailed health check patterns
+- Pydantic response models with examples
+- Dependency checking (DB, Redis, Storage)
+- Proper HTTP status codes for health states
+
+Health checks are critical for:
+- Container orchestration (K8s liveness/readiness probes)
+- Load balancer health checks
+- Monitoring and alerting systems
+"""
+
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+
+from app.config import Settings, get_settings
+from app.database import check_db_connection
+
+router = APIRouter()
+
+
+class HealthStatus(str, Enum):
+    """Health status enumeration."""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"  # Some non-critical services down
+    UNHEALTHY = "unhealthy"  # Critical services down
+
+
+class ComponentHealth(BaseModel):
+    """Health status of an individual component."""
+
+    status: HealthStatus
+    latency_ms: float | None = None
+    message: str | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "healthy",
+                    "latency_ms": 1.5,
+                    "message": None,
+                }
+            ]
+        }
+    }
+
+
+class HealthResponse(BaseModel):
+    """Simple health check response."""
+
+    status: HealthStatus
+    timestamp: datetime
+    version: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "healthy",
+                    "timestamp": "2024-01-15T10:30:00Z",
+                    "version": "0.1.0",
+                }
+            ]
+        }
+    }
+
+
+class DetailedHealthResponse(BaseModel):
+    """Detailed health check with component status."""
+
+    status: HealthStatus
+    timestamp: datetime
+    version: str
+    environment: str
+    components: dict[str, ComponentHealth] = Field(
+        description="Health status of each system component"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "healthy",
+                    "timestamp": "2024-01-15T10:30:00Z",
+                    "version": "0.1.0",
+                    "environment": "development",
+                    "components": {
+                        "database": {"status": "healthy", "latency_ms": 2.1},
+                        "redis": {"status": "healthy", "latency_ms": 0.5},
+                        "storage": {"status": "healthy", "latency_ms": 0.1},
+                    },
+                }
+            ]
+        }
+    }
+
+
+@router.get(
+    "",
+    response_model=HealthResponse,
+    summary="Basic Health Check",
+    description="Quick health check for load balancers and basic monitoring.",
+)
+async def health_check(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> HealthResponse:
+    """
+    Basic health check endpoint.
+
+    Returns a simple status indicating if the API is responding.
+    Use this for:
+    - Kubernetes liveness probes
+    - Load balancer health checks
+    - Quick "is it up?" checks
+    """
+    return HealthResponse(
+        status=HealthStatus.HEALTHY,
+        timestamp=datetime.now(timezone.utc),
+        version=settings.app_version,
+    )
+
+
+@router.get(
+    "/ready",
+    response_model=DetailedHealthResponse,
+    summary="Readiness Check",
+    description="Detailed health check including all dependencies.",
+)
+async def readiness_check(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> DetailedHealthResponse:
+    """
+    Detailed readiness check endpoint.
+
+    Checks all system dependencies and returns their status.
+    Use this for:
+    - Kubernetes readiness probes
+    - Detailed system monitoring
+    - Debugging connectivity issues
+
+    A service is "ready" when all critical dependencies are available.
+    """
+    components: dict[str, ComponentHealth] = {}
+    overall_status = HealthStatus.HEALTHY
+
+    # Check database connection
+    db_health = await check_database_health()
+    components["database"] = db_health
+    if db_health.status != HealthStatus.HEALTHY:
+        overall_status = HealthStatus.DEGRADED
+
+    # Check Redis connection
+    # TODO (Module 6): Implement actual Redis ping
+    components["redis"] = ComponentHealth(
+        status=HealthStatus.HEALTHY,
+        latency_ms=0.0,
+        message="Not yet implemented - Module 6",
+    )
+
+    # Check storage accessibility
+    storage_status = await check_storage_health(settings)
+    components["storage"] = storage_status
+    if storage_status.status != HealthStatus.HEALTHY:
+        overall_status = HealthStatus.DEGRADED
+
+    # Check ML models loaded
+    # TODO (Module 5): Implement ML model health check
+    components["ml_models"] = ComponentHealth(
+        status=HealthStatus.HEALTHY,
+        latency_ms=0.0,
+        message="Not yet implemented - Module 5",
+    )
+
+    return DetailedHealthResponse(
+        status=overall_status,
+        timestamp=datetime.now(timezone.utc),
+        version=settings.app_version,
+        environment=settings.environment,
+        components=components,
+    )
+
+
+async def check_database_health() -> ComponentHealth:
+    """
+    Check if database is reachable.
+
+    This verifies:
+    - Connection pool is initialized
+    - Database accepts queries
+    """
+    import time
+
+    start = time.perf_counter()
+
+    try:
+        is_connected = await check_db_connection()
+        latency = (time.perf_counter() - start) * 1000
+
+        if is_connected:
+            return ComponentHealth(
+                status=HealthStatus.HEALTHY,
+                latency_ms=round(latency, 2),
+            )
+        else:
+            return ComponentHealth(
+                status=HealthStatus.UNHEALTHY,
+                message="Database connection failed",
+            )
+
+    except Exception as e:
+        return ComponentHealth(
+            status=HealthStatus.UNHEALTHY,
+            message=f"Database check failed: {str(e)}",
+        )
+
+
+async def check_storage_health(settings: Settings) -> ComponentHealth:
+    """
+    Check if storage directories are accessible.
+
+    This verifies:
+    - Upload directory exists and is writable
+    - Embeddings directory exists and is writable
+    """
+    import time
+
+    start = time.perf_counter()
+
+    try:
+        uploads_path = settings.storage.uploads_path
+        embeddings_path = settings.storage.embeddings_path
+
+        # Check directories exist
+        if not uploads_path.exists():
+            return ComponentHealth(
+                status=HealthStatus.UNHEALTHY,
+                message=f"Uploads directory does not exist: {uploads_path}",
+            )
+
+        if not embeddings_path.exists():
+            return ComponentHealth(
+                status=HealthStatus.UNHEALTHY,
+                message=f"Embeddings directory does not exist: {embeddings_path}",
+            )
+
+        # Check directories are writable (try to create a temp file)
+        test_file = uploads_path / ".health_check"
+        test_file.touch()
+        test_file.unlink()
+
+        latency = (time.perf_counter() - start) * 1000
+
+        return ComponentHealth(
+            status=HealthStatus.HEALTHY,
+            latency_ms=round(latency, 2),
+        )
+
+    except PermissionError:
+        return ComponentHealth(
+            status=HealthStatus.UNHEALTHY,
+            message="Storage directory is not writable",
+        )
+    except Exception as e:
+        return ComponentHealth(
+            status=HealthStatus.UNHEALTHY,
+            message=f"Storage check failed: {str(e)}",
+        )
