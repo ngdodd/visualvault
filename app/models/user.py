@@ -9,11 +9,15 @@ This module demonstrates:
 """
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.asset import Asset
 
 
 class User(Base, TimestampMixin):
@@ -52,6 +56,13 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",  # Delete API keys when user is deleted
         lazy="selectin",  # Eager load by default
+    )
+
+    assets: Mapped[list["Asset"]] = relationship(
+        "Asset",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select",  # Lazy load assets (could be many)
     )
 
     def __repr__(self) -> str:

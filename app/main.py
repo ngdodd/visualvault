@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.config import Settings, get_settings
 from app.database import close_db, init_db
+from app.services.storage import init_storage
 
 # Configure structured logging
 structlog.configure(
@@ -65,6 +66,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings.storage.uploads_path.mkdir(parents=True, exist_ok=True)
     settings.storage.embeddings_path.mkdir(parents=True, exist_ok=True)
     logger.info("Storage directories initialized", path=str(settings.storage.base_path))
+
+    # Initialize storage service
+    init_storage(settings)
+    logger.info("Storage service initialized")
 
     # Initialize database connection pool
     init_db(settings)
