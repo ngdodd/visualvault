@@ -20,6 +20,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from fastapi.responses import PlainTextResponse
+
 from app.config import Settings, get_settings
 from app.database import check_db_connection
 
@@ -159,12 +161,10 @@ async def readiness_check(
         overall_status = HealthStatus.DEGRADED
 
     # Check Redis connection
-    # TODO (Module 6): Implement actual Redis ping
-    components["redis"] = ComponentHealth(
-        status=HealthStatus.HEALTHY,
-        latency_ms=0.0,
-        message="Not yet implemented - Module 6",
-    )
+    redis_health = await check_redis_health()
+    components["redis"] = redis_health
+    if redis_health.status != HealthStatus.HEALTHY:
+        overall_status = HealthStatus.DEGRADED
 
     # Check storage accessibility
     storage_status = await check_storage_health(settings)
@@ -172,13 +172,11 @@ async def readiness_check(
     if storage_status.status != HealthStatus.HEALTHY:
         overall_status = HealthStatus.DEGRADED
 
-    # Check ML models loaded
-    # TODO (Module 5): Implement ML model health check
-    components["ml_models"] = ComponentHealth(
-        status=HealthStatus.HEALTHY,
-        latency_ms=0.0,
-        message="Not yet implemented - Module 5",
-    )
+    # Check Celery workers
+    worker_health = await check_worker_health()
+    components["workers"] = worker_health
+    if worker_health.status == HealthStatus.UNHEALTHY:
+        overall_status = HealthStatus.DEGRADED
 
     return DetailedHealthResponse(
         status=overall_status,
@@ -274,3 +272,88 @@ async def check_storage_health(settings: Settings) -> ComponentHealth:
             status=HealthStatus.UNHEALTHY,
             message=f"Storage check failed: {str(e)}",
         )
+
+
+async def check_redis_health() -> ComponentHealth:
+    """
+    Check if Redis is reachable.
+    """
+    import time
+
+    start = time.perf_counter()
+
+    try:
+        from app.services.cache import get_cache_service
+
+        cache = get_cache_service()
+        await cache.redis.ping()
+        latency = (time.perf_counter() - start) * 1000
+
+        return ComponentHealth(
+            status=HealthStatus.HEALTHY,
+            latency_ms=round(latency, 2),
+        )
+
+    except RuntimeError:
+        # Cache not initialized
+        return ComponentHealth(
+            status=HealthStatus.DEGRADED,
+            message="Cache service not initialized",
+        )
+    except Exception as e:
+        return ComponentHealth(
+            status=HealthStatus.UNHEALTHY,
+            message=f"Redis check failed: {str(e)}",
+        )
+
+
+async def check_worker_health() -> ComponentHealth:
+    """
+    Check if Celery workers are available.
+    """
+    import time
+
+    start = time.perf_counter()
+
+    try:
+        from app.workers.celery_app import celery_app
+
+        # Ping workers with short timeout
+        result = celery_app.control.ping(timeout=1.0)
+        latency = (time.perf_counter() - start) * 1000
+
+        if result:
+            return ComponentHealth(
+                status=HealthStatus.HEALTHY,
+                latency_ms=round(latency, 2),
+                message=f"{len(result)} worker(s) online",
+            )
+        else:
+            return ComponentHealth(
+                status=HealthStatus.DEGRADED,
+                message="No workers responded",
+            )
+
+    except Exception as e:
+        return ComponentHealth(
+            status=HealthStatus.DEGRADED,
+            message=f"Worker check failed: {str(e)}",
+        )
+
+
+@router.get(
+    "/metrics",
+    response_class=PlainTextResponse,
+    summary="Prometheus Metrics",
+    description="Application metrics in Prometheus format.",
+)
+async def get_metrics() -> str:
+    """
+    Export metrics in Prometheus text format.
+
+    Use this endpoint for Prometheus scraping.
+    """
+    from app.middleware.metrics import get_metrics_collector
+
+    collector = get_metrics_collector()
+    return collector.get_prometheus_format()

@@ -27,6 +27,7 @@ from app.schemas.asset import (
 )
 from app.services.storage import get_storage_service
 from app.utils.image import get_image_dimensions, validate_image_integrity
+from app.workers.tasks.processing import process_asset
 
 router = APIRouter()
 
@@ -197,8 +198,8 @@ async def upload_image(
     db.add(asset)
     await db.flush()  # Get the ID
 
-    # TODO: Queue ML processing task
-    # celery_app.send_task("process_asset", args=[asset.id])
+    # Queue ML processing task
+    process_asset.delay(asset.id)
 
     return AssetUploadResponse(
         id=asset.id,

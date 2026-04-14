@@ -20,6 +20,12 @@ from app.api.v1.router import api_router
 from app.config import Settings, get_settings
 from app.database import close_db, init_db
 from app.services.storage import init_storage
+from app.services.cache import init_cache, close_cache
+from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.metrics import MetricsMiddleware
+from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Configure structured logging
 structlog.configure(
@@ -75,18 +81,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     init_db(settings)
     logger.info("Database connection pool initialized")
 
-    # TODO (Module 5): Load ML models
+    # Initialize cache service
+    await init_cache(settings)
+    logger.info("Cache service initialized")
 
     yield  # Application runs here
 
     # === SHUTDOWN ===
     logger.info("Shutting down VisualVault API")
 
+    # Close cache connections
+    await close_cache()
+    logger.info("Cache connections closed")
+
     # Close database connections
     await close_db()
     logger.info("Database connections closed")
-
-    # TODO (Module 5): Cleanup ML models
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -136,6 +146,14 @@ An ML-powered platform for image analysis, search, and management.
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add custom middleware (order matters - first added = outermost)
+    app.add_middleware(MetricsMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
+
+    # Configure rate limiting
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     # Include API routers
     app.include_router(api_router, prefix=settings.api_v1_prefix)
