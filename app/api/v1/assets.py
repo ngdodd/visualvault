@@ -12,7 +12,7 @@ import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import func, select
 
 from app.api.v1.auth import CurrentUserDep
@@ -26,7 +26,7 @@ from app.schemas.asset import (
     AssetUploadResponse,
 )
 from app.services.storage import get_storage_service
-from app.utils.image import get_image_dimensions, validate_image_integrity
+from app.utils.image import get_image_dimensions, validate_image_integrity, color_segment_image
 from app.workers.tasks.processing import process_asset
 
 router = APIRouter()
@@ -419,3 +419,116 @@ async def upload_images_batch(
 
     # Return successful uploads (partial success is OK)
     return results
+
+
+# =============================================================================
+# Image Analysis Endpoints
+# =============================================================================
+
+
+@router.get(
+    "/{asset_id}/segment",
+    summary="Color segmentation",
+    description="Get a color-segmented version of the image using k-means clustering.",
+    responses={
+        200: {
+            "content": {"image/png": {}},
+            "description": "Segmented image",
+        },
+        404: {"description": "Asset not found"},
+    },
+)
+async def segment_asset(
+    asset_id: int,
+    user: CurrentUserDep,
+    db: DbSessionDep,
+    num_clusters: int = Query(5, ge=2, le=16, description="Number of color clusters"),
+    format: str = Query("png", regex="^(png|jpeg)$", description="Output format"),
+) -> Response:
+    """
+    Generate a color-segmented version of an image.
+
+    Uses k-means clustering to reduce the image to a specified number of colors.
+    This creates a posterized/simplified version of the image.
+
+    - **num_clusters**: Number of distinct colors in output (2-16)
+    - **format**: Output image format (png or jpeg)
+    """
+    asset = await db.get(Asset, asset_id)
+
+    if not asset or asset.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+
+    storage = get_storage_service()
+    file_path = await storage.get_file_path(asset.storage_path)
+
+    if not file_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in storage",
+        )
+
+    # Generate segmented image
+    with open(file_path, "rb") as f:
+        output_format = format.upper()
+        segmented_bytes, cluster_colors = color_segment_image(
+            f, num_clusters=num_clusters, output_format=output_format
+        )
+
+    media_type = "image/png" if output_format == "PNG" else "image/jpeg"
+
+    return Response(
+        content=segmented_bytes,
+        media_type=media_type,
+        headers={
+            "X-Cluster-Colors": json.dumps(cluster_colors),
+        },
+    )
+
+
+@router.get(
+    "/{asset_id}/segment/info",
+    summary="Color segmentation info",
+    description="Get color cluster information without generating the image.",
+)
+async def segment_asset_info(
+    asset_id: int,
+    user: CurrentUserDep,
+    db: DbSessionDep,
+    num_clusters: int = Query(5, ge=2, le=16, description="Number of color clusters"),
+) -> dict:
+    """
+    Get color cluster information for an image.
+
+    Returns the cluster colors and their percentages without
+    generating the full segmented image.
+    """
+    asset = await db.get(Asset, asset_id)
+
+    if not asset or asset.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+
+    storage = get_storage_service()
+    file_path = await storage.get_file_path(asset.storage_path)
+
+    if not file_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in storage",
+        )
+
+    # Generate segmentation info
+    with open(file_path, "rb") as f:
+        _, cluster_colors = color_segment_image(f, num_clusters=num_clusters)
+
+    return {
+        "asset_id": asset_id,
+        "num_clusters": num_clusters,
+        "clusters": cluster_colors,
+    }

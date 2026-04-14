@@ -50,7 +50,7 @@ services:
     build:
       context: .
       target: development
-    command: celery -A app.workers.celery_app worker --loglevel=info
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q default,ml
     volumes:
       - ./app:/app/app:ro
       - ./storage:/app/storage
@@ -106,6 +106,19 @@ services:
       timeout: 5s
       retries: 5
     command: redis-server --appendonly yes
+
+  # ===================
+  # Frontend (React + Vite)
+  # ===================
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    profiles:
+      - frontend  # Start with: docker-compose --profile frontend up
 
   # ===================
   # Flower (Celery Monitoring) - Optional

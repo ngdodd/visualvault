@@ -9,6 +9,7 @@ import io
 from pathlib import Path
 from typing import BinaryIO
 
+import numpy as np
 from PIL import Image
 
 
@@ -242,3 +243,87 @@ def extract_dominant_colors(file: BinaryIO, num_colors: int = 5) -> list[dict]:
     file.seek(pos)
 
     return colors
+
+
+def color_segment_image(
+    file: BinaryIO,
+    num_clusters: int = 5,
+    output_format: str = "PNG",
+) -> tuple[bytes, list[dict]]:
+    """
+    Segment an image by color using k-means clustering.
+
+    Each pixel is replaced with its cluster center color,
+    creating a posterized/segmented effect.
+
+    Args:
+        file: File-like object containing image data
+        num_clusters: Number of color clusters (2-16)
+        output_format: Output image format (PNG or JPEG)
+
+    Returns:
+        Tuple of (segmented_image_bytes, cluster_colors)
+    """
+    from sklearn.cluster import KMeans
+
+    pos = file.tell()
+
+    # Load image
+    img = Image.open(file)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    # Convert to numpy array
+    img_array = np.array(img)
+    original_shape = img_array.shape
+
+    # Reshape to list of pixels (N, 3)
+    pixels = img_array.reshape(-1, 3)
+
+    # Apply k-means clustering
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(pixels)
+    centers = kmeans.cluster_centers_.astype(np.uint8)
+
+    # Replace each pixel with its cluster center
+    segmented_pixels = centers[labels]
+
+    # Reshape back to image dimensions
+    segmented_array = segmented_pixels.reshape(original_shape)
+
+    # Convert back to PIL Image
+    segmented_img = Image.fromarray(segmented_array)
+
+    # Calculate cluster statistics
+    unique, counts = np.unique(labels, return_counts=True)
+    total_pixels = len(labels)
+
+    cluster_colors = []
+    for cluster_idx in range(num_clusters):
+        r, g, b = centers[cluster_idx]
+        count = counts[unique == cluster_idx][0] if cluster_idx in unique else 0
+        percentage = (count / total_pixels) * 100
+        cluster_colors.append({
+            "cluster": cluster_idx,
+            "hex": f"#{r:02x}{g:02x}{b:02x}",
+            "rgb": [int(r), int(g), int(b)],
+            "percentage": round(percentage, 2),
+            "pixel_count": int(count),
+        })
+
+    # Sort by percentage
+    cluster_colors.sort(key=lambda x: x["percentage"], reverse=True)
+
+    # Save to bytes
+    output = io.BytesIO()
+    save_kwargs = {"format": output_format}
+    if output_format == "JPEG":
+        if segmented_img.mode == "RGBA":
+            segmented_img = segmented_img.convert("RGB")
+        save_kwargs["quality"] = 90
+
+    segmented_img.save(output, **save_kwargs)
+
+    file.seek(pos)
+
+    return output.getvalue(), cluster_colors

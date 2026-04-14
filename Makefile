@@ -99,7 +99,7 @@ db-history:
 # Celery
 # ===================
 worker:
-	celery -A app.workers.celery_app worker --loglevel=info
+	celery -A app.workers.celery_app worker --loglevel=info -Q default,ml
 
 flower:
 	celery -A app.workers.celery_app flower --port=5555

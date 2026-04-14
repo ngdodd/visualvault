@@ -37,6 +37,7 @@ dependencies = [
     "pillow>=10.2.0",
     "easyocr>=1.7.0",  # OCR
     "numpy>=1.26.0",
+    "scikit-learn>=1.4.0",  # For k-means clustering
 
     # Utilities
     "httpx>=0.26.0",  # Async HTTP client

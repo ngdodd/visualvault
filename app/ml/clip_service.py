@@ -101,6 +101,12 @@ class CLIPService:
         with torch.no_grad():
             image_features = self.model.get_image_features(**inputs)
 
+        # Handle both tensor and BaseModelOutputWithPooling return types
+        if hasattr(image_features, 'pooler_output'):
+            image_features = image_features.pooler_output
+        elif hasattr(image_features, 'last_hidden_state'):
+            image_features = image_features.last_hidden_state[:, 0, :]
+
         # Normalize the embedding
         embedding = image_features.cpu().numpy()[0]
         embedding = embedding / np.linalg.norm(embedding)
@@ -140,6 +146,12 @@ class CLIPService:
             with torch.no_grad():
                 image_features = self.model.get_image_features(**inputs)
 
+            # Handle both tensor and BaseModelOutputWithPooling return types
+            if hasattr(image_features, 'pooler_output'):
+                image_features = image_features.pooler_output
+            elif hasattr(image_features, 'last_hidden_state'):
+                image_features = image_features.last_hidden_state[:, 0, :]
+
             # Normalize each embedding
             embeddings = image_features.cpu().numpy()
             for emb in embeddings:
@@ -169,6 +181,12 @@ class CLIPService:
         # Generate embedding
         with torch.no_grad():
             text_features = self.model.get_text_features(**inputs)
+
+        # Handle both tensor and output object return types
+        if hasattr(text_features, 'pooler_output'):
+            text_features = text_features.pooler_output
+        elif hasattr(text_features, 'last_hidden_state'):
+            text_features = text_features.last_hidden_state[:, 0, :]
 
         # Normalize
         embedding = text_features.cpu().numpy()[0]
@@ -254,6 +272,17 @@ class CLIPService:
         with torch.no_grad():
             image_features = self.model.get_image_features(**image_inputs)
             text_features = self.model.get_text_features(**text_inputs)
+
+            # Handle both tensor and output object return types
+            if hasattr(image_features, 'pooler_output'):
+                image_features = image_features.pooler_output
+            elif hasattr(image_features, 'last_hidden_state'):
+                image_features = image_features.last_hidden_state[:, 0, :]
+
+            if hasattr(text_features, 'pooler_output'):
+                text_features = text_features.pooler_output
+            elif hasattr(text_features, 'last_hidden_state'):
+                text_features = text_features.last_hidden_state[:, 0, :]
 
             # Normalize
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)

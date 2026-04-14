@@ -24,6 +24,7 @@ from app.services.cache import init_cache, close_cache
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.metrics import MetricsMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from app.ml.clip_service import init_clip_service
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -84,6 +85,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize cache service
     await init_cache(settings)
     logger.info("Cache service initialized")
+
+    # Pre-load CLIP model for search (avoids slow first request)
+    logger.info("Loading CLIP model (this may take a minute on first run)...")
+    init_clip_service(settings)
+    logger.info("CLIP model loaded")
 
     yield  # Application runs here
 
