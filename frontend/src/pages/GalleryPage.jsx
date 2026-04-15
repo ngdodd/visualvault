@@ -32,7 +32,7 @@ function AssetCard({ asset }) {
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
         {asset.status === 'completed' ? (
           <img
-            src={`/api/v1/assets/${asset.id}/file`}
+            src={assets.getFileUrl(asset.id)}
             alt={asset.original_filename}
             className="w-full h-full object-cover"
             loading="lazy"

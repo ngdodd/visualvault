@@ -77,7 +77,7 @@ function SimilarAssets({ assetId }) {
           className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group"
         >
           <img
-            src={`/api/v1/assets/${asset.id}/file`}
+            src={assets.getFileUrl(asset.id)}
             alt={asset.original_filename}
             className="w-full h-full object-cover"
           />
@@ -103,7 +103,7 @@ function SegmentationPanel({ assetId }) {
     try {
       const info = await assets.getSegmentInfo(assetId, numClusters)
       setClusterInfo(info.clusters)
-      setSegmentedUrl(`/api/v1/assets/${assetId}/segment?num_clusters=${numClusters}&t=${Date.now()}`)
+      setSegmentedUrl(`${assets.getSegmentUrl(assetId, numClusters)}&t=${Date.now()}`)
     } catch (err) {
       console.error('Segmentation failed:', err)
     } finally {
@@ -250,7 +250,7 @@ export default function AssetDetailPage() {
         <div className="relative max-w-full max-h-full">
           {asset.status === 'completed' ? (
             <img
-              src={`/api/v1/assets/${asset.id}/file`}
+              src={assets.getFileUrl(asset.id)}
               alt={asset.original_filename}
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
@@ -293,7 +293,7 @@ export default function AssetDetailPage() {
           <div className="flex gap-2">
             {asset.status === 'completed' && (
               <a
-                href={`/api/v1/assets/${asset.id}/file`}
+                href={assets.getFileUrl(asset.id)}
                 download={asset.original_filename}
                 className="btn-secondary flex-1 text-sm"
               >

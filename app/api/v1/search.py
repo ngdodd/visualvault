@@ -324,6 +324,39 @@ async def search_by_image(
 
 
 @router.get(
+    "/labels/available",
+    summary="Get available labels",
+    description="Get all unique labels across the user's processed images.",
+)
+async def get_available_labels(
+    user: CurrentUserDep,
+    db: DbSessionDep,
+) -> list[str]:
+    """
+    Get all unique labels from the user's processed assets.
+
+    Returns a sorted list of unique labels.
+    """
+    result = await db.execute(
+        select(Asset)
+        .where(Asset.user_id == user.id)
+        .where(Asset.status == AssetStatus.COMPLETED.value)
+        .where(Asset.ml_labels.isnot(None))
+    )
+    assets = result.scalars().all()
+
+    all_labels = set()
+    for asset in assets:
+        try:
+            labels = json.loads(asset.ml_labels)
+            all_labels.update(labels)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+    return sorted(all_labels)
+
+
+@router.get(
     "/labels",
     summary="Search by label",
     description="Find images with specific ML-detected labels.",

@@ -7,6 +7,7 @@ import {
   LogOut,
   User,
   Layers,
+  Sparkles,
 } from 'lucide-react'
 
 export default function Layout() {
@@ -22,6 +23,7 @@ export default function Layout() {
     { to: '/', icon: Image, label: 'Gallery' },
     { to: '/upload', icon: Upload, label: 'Upload' },
     { to: '/search', icon: Search, label: 'Search' },
+    { to: '/analyze', icon: Sparkles, label: 'Analyze' },
   ]
 
   return (

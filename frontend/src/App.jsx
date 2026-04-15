@@ -7,6 +7,7 @@ import GalleryPage from './pages/GalleryPage'
 import AssetDetailPage from './pages/AssetDetailPage'
 import SearchPage from './pages/SearchPage'
 import UploadPage from './pages/UploadPage'
+import AnalyzePage from './pages/AnalyzePage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -74,6 +75,7 @@ function AppRoutes() {
         <Route index element={<GalleryPage />} />
         <Route path="upload" element={<UploadPage />} />
         <Route path="search" element={<SearchPage />} />
+        <Route path="analyze" element={<AnalyzePage />} />
         <Route path="assets/:id" element={<AssetDetailPage />} />
       </Route>
     </Routes>

@@ -15,7 +15,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from fastapi.responses import FileResponse, Response
 from sqlalchemy import func, select
 
-from app.api.v1.auth import CurrentUserDep
+from app.api.v1.auth import CurrentUserDep, CurrentUserOptionalDep
+from app.services.auth import AuthService
 from app.config import get_settings
 from app.database import DbSessionDep
 from app.models.asset import Asset, AssetStatus
@@ -305,10 +306,24 @@ async def get_asset(
 )
 async def download_asset(
     asset_id: int,
-    user: CurrentUserDep,
     db: DbSessionDep,
+    user: CurrentUserOptionalDep = None,
+    token: str | None = Query(None, description="JWT token for image loading in browsers"),
 ) -> FileResponse:
     """Download the original uploaded file."""
+    # Handle token-based auth for browser image loading
+    if not user and token:
+        auth_service = AuthService(db)
+        user_id = auth_service.verify_access_token(token)
+        if user_id:
+            user = await auth_service.get_user_by_id(user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     asset = await db.get(Asset, asset_id)
 
     if not asset or asset.user_id != user.id:
@@ -440,8 +455,9 @@ async def upload_images_batch(
 )
 async def segment_asset(
     asset_id: int,
-    user: CurrentUserDep,
     db: DbSessionDep,
+    user: CurrentUserOptionalDep = None,
+    token: str | None = Query(None, description="JWT token for browser image loading"),
     num_clusters: int = Query(5, ge=2, le=16, description="Number of color clusters"),
     format: str = Query("png", regex="^(png|jpeg)$", description="Output format"),
 ) -> Response:
@@ -454,6 +470,19 @@ async def segment_asset(
     - **num_clusters**: Number of distinct colors in output (2-16)
     - **format**: Output image format (png or jpeg)
     """
+    # Handle token-based auth for browser image loading
+    if not user and token:
+        auth_service = AuthService(db)
+        user_id = auth_service.verify_access_token(token)
+        if user_id:
+            user = await auth_service.get_user_by_id(user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     asset = await db.get(Asset, asset_id)
 
     if not asset or asset.user_id != user.id:
