@@ -8,6 +8,7 @@ with SQLAlchemy's metadata before Alembic runs migrations.
 from app.models.base import Base, TimestampMixin
 from app.models.user import APIKey, User
 from app.models.asset import Asset, AssetStatus
+from app.models.tag import UserTag
 
 __all__ = [
     "Base",
@@ -16,4 +17,5 @@ __all__ = [
     "APIKey",
     "Asset",
     "AssetStatus",
+    "UserTag",
 ]

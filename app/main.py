@@ -25,6 +25,7 @@ from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.metrics import MetricsMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from app.ml.clip_service import init_clip_service
+from app.ml.yolo_service import init_yolo_service
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -90,6 +91,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Loading CLIP model (this may take a minute on first run)...")
     init_clip_service(settings)
     logger.info("CLIP model loaded")
+
+    # Pre-load YOLO model for object detection
+    logger.info("Loading YOLO model (default: yolov8n)...")
+    init_yolo_service()
+    logger.info("YOLO model loaded")
 
     yield  # Application runs here
 

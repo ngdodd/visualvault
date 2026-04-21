@@ -18,6 +18,7 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.asset import Asset
+    from app.models.tag import UserTag
 
 
 class User(Base, TimestampMixin):
@@ -63,6 +64,13 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="select",  # Lazy load assets (could be many)
+    )
+
+    tags: Mapped[list["UserTag"]] = relationship(
+        "UserTag",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select",
     )
 
     def __repr__(self) -> str:

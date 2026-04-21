@@ -68,8 +68,13 @@ class CLIPService:
             logger.info("Using CPU for inference")
 
         # Load model and processor
+        # Use safetensors format to avoid pickle security issues
         self.processor = CLIPProcessor.from_pretrained(model_name)
-        self.model = CLIPModel.from_pretrained(model_name)
+        self.model = CLIPModel.from_pretrained(
+            model_name,
+            torch_dtype=torch.float32,
+            use_safetensors=True,
+        )
         self.model.to(self.device)
         self.model.eval()  # Set to evaluation mode
 

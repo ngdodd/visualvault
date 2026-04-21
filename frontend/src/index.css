@@ -2,34 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme variables applied globally */
 body {
-  font-family: 'Inter', sans-serif;
-  @apply bg-gray-50 text-gray-900;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Override for specific themes to disable transitions */
+.theme-retro body {
+  transition: none;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: var(--radius);
+    transition: all var(--transition-fast);
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+    @apply btn;
+    background-color: var(--color-primary);
+    color: var(--color-primary-text);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300;
+    @apply btn;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text);
+    border: var(--border-width) solid var(--color-border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-border-hover);
   }
 
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+    @apply btn;
+    background-color: var(--color-error);
+    color: white;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all;
+    @apply w-full px-3 py-2 outline-none;
+    background-color: var(--color-bg-secondary);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    transition: border-color var(--transition-fast);
+  }
+
+  .input:focus {
+    border-color: var(--color-primary);
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden;
+    @apply overflow-hidden;
+    background-color: var(--color-bg-secondary);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
   }
 
   .badge {
@@ -60,11 +98,21 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background-color: var(--color-bg-tertiary);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  background-color: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-hover);
+}
+
+/* Retro theme scrollbar */
+.theme-retro ::-webkit-scrollbar-thumb {
+  border-radius: 0;
 }
 
 /* Image grid animations */
@@ -83,9 +131,49 @@ body {
 
 /* Drag and drop zone */
 .dropzone {
-  @apply border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200;
+  @apply p-8 text-center;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
 }
 
 .dropzone.active {
-  @apply border-primary-500 bg-primary-50;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+/* Theme-specific retro overrides */
+.theme-retro .dropzone {
+  border-style: solid;
+  border-width: var(--border-width);
+}
+
+/* Nav link hover effects */
+.nav-link:hover {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text) !important;
+}
+
+.nav-link-active:hover {
+  background-color: var(--color-primary) !important;
+}
+
+/* Retro pixelated images */
+.theme-retro img {
+  image-rendering: pixelated;
+}
+
+/* Retro heading styles */
+.theme-retro h1,
+.theme-retro h2,
+.theme-retro h3 {
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Synthwave heading glow */
+.theme-synthwave h1,
+.theme-synthwave h2 {
+  text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary), 0 0 40px var(--color-primary);
 }

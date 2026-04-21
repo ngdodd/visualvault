@@ -39,32 +39,45 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-bg)' }}>
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+          <div
+            className="w-10 h-10 flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))',
+              borderRadius: 'var(--radius-lg)',
+            }}
+          >
             <Layers className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-bold">VisualVault</span>
+          <span className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>VisualVault</span>
         </div>
 
         <div className="card p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Create an account</h2>
-          <p className="text-gray-600 mb-8">Get started with VisualVault</p>
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Create an account</h2>
+          <p className="mb-8" style={{ color: 'var(--color-text-secondary)' }}>Get started with VisualVault</p>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div
+              className="mb-6 p-4 rounded-lg text-sm"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid var(--color-error)',
+                color: 'var(--color-error)',
+              }}
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-muted)' }} />
                 <input
                   id="email"
                   type="email"
@@ -78,11 +91,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-muted)' }} />
                 <input
                   id="password"
                   type="password"
@@ -96,11 +109,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
                 Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-text-muted)' }} />
                 <input
                   id="confirmPassword"
                   type="password"
@@ -129,9 +142,9 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-gray-600">
+          <p className="mt-6 text-center" style={{ color: 'var(--color-text-secondary)' }}>
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link to="/login" style={{ color: 'var(--color-primary)' }} className="font-medium hover:opacity-80">
               Sign in
             </Link>
           </p>

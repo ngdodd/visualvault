@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { assets, search } from '../lib/api'
+import { assets, search, tags } from '../lib/api'
 import {
   ArrowLeft,
   Download,
@@ -15,6 +15,9 @@ import {
   Loader,
   ExternalLink,
   RefreshCw,
+  Plus,
+  X,
+  Sparkles,
 } from 'lucide-react'
 
 const statusConfig = {
@@ -88,6 +91,141 @@ function SimilarAssets({ assetId }) {
           </div>
         </Link>
       ))}
+    </div>
+  )
+}
+
+function TagManager({ assetId }) {
+  const [customTags, setCustomTags] = useState([])
+  const [userTags, setUserTags] = useState([])
+  const [newTag, setNewTag] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+
+  useEffect(() => {
+    loadTags()
+  }, [assetId])
+
+  const loadTags = async () => {
+    try {
+      const [assetTagsData, userTagsData] = await Promise.all([
+        tags.getAssetTags(assetId),
+        tags.list('usage'),
+      ])
+      setCustomTags(assetTagsData.custom_tags || [])
+      setUserTags(userTagsData || [])
+    } catch (err) {
+      console.error('Failed to load tags:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddTag = async (tagName) => {
+    if (!tagName.trim()) return
+
+    setAdding(true)
+    try {
+      const result = await tags.addTagToAsset(assetId, tagName.trim())
+      setCustomTags(result.custom_tags)
+      setNewTag('')
+      // Refresh user tags list
+      const userTagsData = await tags.list('usage')
+      setUserTags(userTagsData || [])
+    } catch (err) {
+      console.error('Failed to add tag:', err)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleRemoveTag = async (tagName) => {
+    try {
+      const result = await tags.removeTagFromAsset(assetId, tagName)
+      setCustomTags(result.custom_tags)
+    } catch (err) {
+      console.error('Failed to remove tag:', err)
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    handleAddTag(newTag)
+  }
+
+  // Suggest tags the user has used before but aren't on this asset
+  const suggestedTags = userTags
+    .filter((t) => !customTags.includes(t.name))
+    .slice(0, 5)
+
+  if (loading) {
+    return <div className="spinner mx-auto" />
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Current custom tags */}
+      {customTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {customTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium"
+            >
+              {tag}
+              <button
+                onClick={() => handleRemoveTag(tag)}
+                className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Add new tag form */}
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value)}
+          placeholder="Add a custom tag..."
+          className="input flex-1 py-2 text-sm"
+          disabled={adding}
+        />
+        <button
+          type="submit"
+          disabled={adding || !newTag.trim()}
+          className="btn-primary py-2 px-3"
+        >
+          {adding ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+        </button>
+      </form>
+
+      {/* Suggested tags */}
+      {suggestedTags.length > 0 && (
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Your tags:</p>
+          <div className="flex flex-wrap gap-1">
+            {suggestedTags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => handleAddTag(tag.name)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 transition-colors"
+              >
+                + {tag.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info about custom tags */}
+      <p className="text-xs text-gray-400 flex items-center gap-1">
+        <Sparkles className="w-3 h-3" />
+        Custom tags are used in ML classification for your future uploads
+      </p>
     </div>
   )
 }
@@ -392,6 +530,14 @@ export default function AssetDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Custom Tags */}
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                  Custom Tags
+                </h3>
+                <TagManager assetId={asset.id} />
+              </div>
 
               {asset.ml_text && (
                 <div>

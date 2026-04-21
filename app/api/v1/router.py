@@ -9,7 +9,7 @@ This module demonstrates:
 
 from fastapi import APIRouter
 
-from app.api.v1 import assets, auth, health, search
+from app.api.v1 import analysis, assets, auth, health, search, tags
 
 # Create the main API router for v1
 api_router = APIRouter()
@@ -39,6 +39,17 @@ api_router.include_router(
     tags=["Search"],
 )
 
+api_router.include_router(
+    analysis.router,
+    prefix="/analysis",
+    tags=["Analysis & MLOps"],
+)
+
+api_router.include_router(
+    tags.router,
+    prefix="/tags",
+    tags=["Tags"],
+)
+
 # Future routers will be added here:
-# api_router.include_router(analysis.router, prefix="/analyze", tags=["Analysis"])
 # api_router.include_router(feedback.router, prefix="/feedback", tags=["Feedback"])

@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import ThemeSwitcher from './ThemeSwitcher'
 import {
   Image,
   Upload,
@@ -27,18 +28,33 @@ export default function Layout() {
   ]
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
+      <aside
+        className="w-64 flex flex-col sidebar"
+        style={{
+          backgroundColor: 'var(--color-bg-secondary)',
+          borderRight: 'var(--border-width) solid var(--color-border)',
+        }}
+      >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-800">
+        <div
+          className="p-6"
+          style={{ borderBottom: 'var(--border-width) solid var(--color-border)' }}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
-              <Layers className="w-6 h-6" />
+            <div
+              className="w-10 h-10 flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))',
+                borderRadius: 'var(--radius-lg)',
+              }}
+            >
+              <Layers className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg">VisualVault</h1>
-              <p className="text-xs text-gray-400">Smart Asset Intelligence</p>
+              <h1 className="font-bold text-lg" style={{ color: 'var(--color-text)' }}>VisualVault</h1>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Smart Asset Intelligence</p>
             </div>
           </div>
         </div>
@@ -52,12 +68,15 @@ export default function Layout() {
                   to={to}
                   end={to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    `flex items-center gap-3 px-4 py-3 transition-all nav-link ${
+                      isActive ? 'nav-link-active' : ''
                     }`
                   }
+                  style={({ isActive }) => ({
+                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                    color: isActive ? 'var(--color-primary-text)' : 'var(--color-text-secondary)',
+                    borderRadius: 'var(--radius)',
+                  })}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{label}</span>
@@ -68,18 +87,35 @@ export default function Layout() {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-800">
-            <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4" />
+        <div
+          className="p-4"
+          style={{ borderTop: 'var(--border-width) solid var(--color-border)' }}
+        >
+          <div
+            className="flex items-center gap-3 px-4 py-3"
+            style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              borderRadius: 'var(--radius)',
+            }}
+          >
+            <div
+              className="w-8 h-8 flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--color-primary)',
+                borderRadius: 'var(--radius-full)',
+              }}
+            >
+              <User className="w-4 h-4" style={{ color: 'var(--color-primary-text)' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.email}</p>
-              <p className="text-xs text-gray-400">Logged in</p>
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{user?.email}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Logged in</p>
             </div>
+            <ThemeSwitcher compact />
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--color-text-muted)' }}
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -89,7 +125,7 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--color-bg)' }}>
         <Outlet />
       </main>
     </div>

@@ -1,0 +1,326 @@
+/* ===========================================
+   VisualVault Theme System
+   =========================================== */
+
+/* Import pixel fonts */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+/* ===========================================
+   Base CSS Variables (Modern Theme Default)
+   =========================================== */
+:root {
+  /* Colors */
+  --color-bg: #f8fafc;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f5f9;
+  --color-text: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+
+  /* Primary colors */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #e0e7ff;
+  --color-primary-text: #ffffff;
+
+  /* Accent colors */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-size-base: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Spacing & Layout */
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --border-width: 1px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+}
+
+/* ===========================================
+   Modern Theme (Default)
+   =========================================== */
+.theme-modern {
+  /* Uses base variables */
+}
+
+/* ===========================================
+   Retro Pixel Theme
+   =========================================== */
+.theme-retro {
+  /* 8-bit color palette */
+  --color-bg: #1a1c2c;
+  --color-bg-secondary: #262b44;
+  --color-bg-tertiary: #3a4466;
+  --color-text: #f4f4f4;
+  --color-text-secondary: #b8c7e0;
+  --color-text-muted: #8b9bb4;
+  --color-border: #5d6f9e;
+  --color-border-hover: #8b9bb4;
+
+  /* Retro primary - bright pixel green */
+  --color-primary: #5fcde4;
+  --color-primary-hover: #cbdbfc;
+  --color-primary-light: #3a4466;
+  --color-primary-text: #1a1c2c;
+
+  /* Retro accents */
+  --color-success: #6abe30;
+  --color-warning: #fbf236;
+  --color-error: #d95763;
+  --color-info: #5fcde4;
+
+  /* Pixel typography */
+  --font-family: 'VT323', monospace;
+  --font-family-mono: 'Press Start 2P', monospace;
+  --font-size-base: 1.25rem;
+  --font-size-sm: 1rem;
+  --font-size-xs: 0.875rem;
+  --font-size-lg: 1.5rem;
+  --font-size-xl: 1.75rem;
+  --font-size-2xl: 2rem;
+
+  /* Chunky pixel styling */
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-full: 0;
+  --shadow: 4px 4px 0 #000000;
+  --shadow-lg: 6px 6px 0 #000000;
+  --border-width: 3px;
+
+  /* No smooth transitions for pixel feel */
+  --transition-fast: 0ms;
+  --transition-base: 0ms;
+}
+
+/* Retro-specific overrides */
+.theme-retro body {
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+.theme-retro .card {
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow);
+}
+
+.theme-retro .btn-primary,
+.theme-retro button[class*="btn"] {
+  border: var(--border-width) solid #000;
+  box-shadow: 3px 3px 0 #000;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.theme-retro .btn-primary:hover,
+.theme-retro button[class*="btn"]:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.theme-retro .btn-primary:active,
+.theme-retro button[class*="btn"]:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #000;
+}
+
+.theme-retro input,
+.theme-retro select,
+.theme-retro textarea {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-bg-secondary);
+}
+
+/* Pixel art scanline effect (optional) */
+.theme-retro::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 9999;
+  opacity: 0.3;
+}
+
+/* ===========================================
+   Dark Theme
+   =========================================== */
+.theme-dark {
+  --color-bg: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-text: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-border: #334155;
+  --color-border-hover: #475569;
+
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-light: #1e1b4b;
+  --color-primary-text: #0f172a;
+
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+}
+
+/* ===========================================
+   Synthwave Theme
+   =========================================== */
+.theme-synthwave {
+  --color-bg: #0d0221;
+  --color-bg-secondary: #1a0533;
+  --color-bg-tertiary: #2d1b4e;
+  --color-text: #f0e6ff;
+  --color-text-secondary: #c4b5fd;
+  --color-text-muted: #8b5cf6;
+  --color-border: #7c3aed;
+  --color-border-hover: #a78bfa;
+
+  /* Neon pink/cyan */
+  --color-primary: #f472b6;
+  --color-primary-hover: #f9a8d4;
+  --color-primary-light: #4c1d95;
+  --color-primary-text: #0d0221;
+
+  --color-success: #34d399;
+  --color-warning: #fcd34d;
+  --color-error: #fb7185;
+  --color-info: #22d3ee;
+
+  /* Synthwave styling */
+  --shadow: 0 0 20px rgba(244, 114, 182, 0.3);
+  --shadow-lg: 0 0 40px rgba(244, 114, 182, 0.4);
+}
+
+/* Synthwave glow effects */
+.theme-synthwave .card {
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.2), inset 0 0 20px rgba(244, 114, 182, 0.05);
+}
+
+.theme-synthwave .btn-primary {
+  box-shadow: 0 0 15px rgba(244, 114, 182, 0.5);
+  text-shadow: 0 0 10px currentColor;
+}
+
+.theme-synthwave .btn-primary:hover {
+  box-shadow: 0 0 25px rgba(244, 114, 182, 0.7);
+}
+
+.theme-synthwave h1,
+.theme-synthwave h2,
+.theme-synthwave h3 {
+  text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary);
+}
+
+/* Synthwave grid background */
+.theme-synthwave body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(244, 114, 182, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244, 114, 182, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: -1;
+}
+
+/* ===========================================
+   Apply Theme Variables to Components
+   =========================================== */
+
+/* Base body styling */
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* Cards */
+.card {
+  background-color: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-text);
+  border-radius: var(--radius);
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* Inputs */
+.input {
+  background-color: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+/* Text colors */
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,137 @@
+# VisualVault GPU Dockerfile
+# Multi-stage build for CUDA-enabled images
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.gpu.yml build
+#   docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+
+# ===================
+# Stage 1: Base image with CUDA and Python
+# ===================
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime as base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libgl1 \
+    libglib2.0-0 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ===================
+# Stage 2: Development image with GPU support
+# ===================
+FROM base as development
+
+# Copy project files
+COPY pyproject.toml README.md ./
+COPY app/ ./app/
+
+# Install dependencies, skipping torch/torchvision since they're in base image
+RUN pip install --upgrade pip && \
+    pip install -e ".[dev]" --no-deps && \
+    pip install \
+        "fastapi>=0.109.0" \
+        "uvicorn[standard]>=0.27.0" \
+        "python-multipart>=0.0.6" \
+        "pydantic[email]>=2.5.0" \
+        "pydantic-settings>=2.1.0" \
+        "sqlalchemy>=2.0.25" \
+        "alembic>=1.13.0" \
+        "asyncpg>=0.29.0" \
+        "psycopg2-binary>=2.9.9" \
+        "python-jose[cryptography]>=3.3.0" \
+        "passlib>=1.7.4" \
+        "bcrypt>=4.0.0,<5.0.0" \
+        "slowapi>=0.1.9" \
+        "celery[redis]>=5.3.0" \
+        "redis>=5.0.0" \
+        "transformers>=4.36.0" \
+        "safetensors>=0.4.0" \
+        "ultralytics>=8.0.0" \
+        "pillow>=10.2.0" \
+        "easyocr>=1.7.0" \
+        "scikit-learn>=1.4.0" \
+        "httpx>=0.26.0" \
+        "python-dotenv>=1.0.0" \
+        "structlog>=24.1.0" \
+        "pytest>=7.4.0" \
+        "pytest-asyncio>=0.23.0" \
+        "pytest-cov>=4.1.0" \
+        "ruff>=0.1.0" \
+        "mypy>=1.8.0" \
+        "pre-commit>=3.6.0"
+
+# Copy remaining files (tests, etc.)
+COPY . .
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# ===================
+# Stage 3: Production image with GPU support
+# ===================
+FROM base as production
+
+# Copy project files
+COPY pyproject.toml README.md ./
+COPY app/ ./app/
+
+# Install production dependencies, skipping torch/torchvision
+RUN pip install --upgrade pip && \
+    pip install -e "." --no-deps && \
+    pip install \
+        "fastapi>=0.109.0" \
+        "uvicorn[standard]>=0.27.0" \
+        "python-multipart>=0.0.6" \
+        "pydantic[email]>=2.5.0" \
+        "pydantic-settings>=2.1.0" \
+        "sqlalchemy>=2.0.25" \
+        "alembic>=1.13.0" \
+        "asyncpg>=0.29.0" \
+        "psycopg2-binary>=2.9.9" \
+        "python-jose[cryptography]>=3.3.0" \
+        "passlib>=1.7.4" \
+        "bcrypt>=4.0.0,<5.0.0" \
+        "slowapi>=0.1.9" \
+        "celery[redis]>=5.3.0" \
+        "redis>=5.0.0" \
+        "transformers>=4.36.0" \
+        "safetensors>=0.4.0" \
+        "ultralytics>=8.0.0" \
+        "pillow>=10.2.0" \
+        "easyocr>=1.7.0" \
+        "scikit-learn>=1.4.0" \
+        "httpx>=0.26.0" \
+        "python-dotenv>=1.0.0" \
+        "structlog>=24.1.0"
+
+# Copy additional files
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash appuser && \
+    mkdir -p /app/storage/uploads /app/storage/embeddings /app/models && \
+    chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

@@ -79,6 +79,9 @@ class Asset(Base, TimestampMixin):
     ml_text: Mapped[str | None] = mapped_column(Text)  # OCR extracted text
     embedding_vector: Mapped[str | None] = mapped_column(Text)  # JSON array of floats
 
+    # User-defined tags (stored as JSON array)
+    custom_tags: Mapped[str | None] = mapped_column(Text)  # JSON array of user tags
+
     # Relationships
     user: Mapped["User"] = relationship(back_populates="assets")
 

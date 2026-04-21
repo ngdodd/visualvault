@@ -1,0 +1,56 @@
+# GPU-enabled Docker Compose Override
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+#
+# Prerequisites:
+#   1. NVIDIA GPU with drivers installed
+#   2. NVIDIA Container Toolkit installed:
+#      https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+#
+# Quick install (Ubuntu/Debian):
+#   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+#   curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+#     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+#     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+#   sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+#   sudo nvidia-ctk runtime configure --runtime=docker
+#   sudo systemctl restart docker
+
+services:
+  api:
+    # Override the base image to use CUDA
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      target: development
+    environment:
+      - ML_DEVICE=cuda
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HF_HUB_DISABLE_TELEMETRY=1
+      - TRANSFORMERS_VERBOSITY=warning
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      target: development
+    environment:
+      - ML_DEVICE=cuda
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

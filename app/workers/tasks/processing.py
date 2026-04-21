@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.asset import Asset, AssetStatus
+from app.models.tag import UserTag
 from app.ml.clip_service import get_clip_service
 from app.utils.image import extract_dominant_colors
 
@@ -114,8 +115,20 @@ def process_asset(self, asset_id: int) -> dict:
             asset.embedding_vector = json.dumps(embedding.tolist())
 
             # Zero-shot classification
+            # Combine default labels with user's custom tags
             logger.info(f"Classifying asset {asset_id}")
-            classifications = clip_service.classify_image(image, DEFAULT_LABELS)
+
+            # Fetch user's custom tags
+            user_tags = db.query(UserTag).filter(
+                UserTag.user_id == asset.user_id
+            ).all()
+            custom_tag_names = [tag.name for tag in user_tags]
+
+            # Combine labels, prioritizing custom tags
+            all_labels = list(set(custom_tag_names + DEFAULT_LABELS))
+            logger.info(f"Using {len(all_labels)} labels ({len(custom_tag_names)} custom)")
+
+            classifications = clip_service.classify_image(image, all_labels)
             # Take top 5 labels with confidence > 0.05
             top_labels = [
                 label for label, score in classifications[:10]
