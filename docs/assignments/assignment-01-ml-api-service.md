@@ -1,4 +1,4 @@
-# Assignment 1: Building an ML API Service
+# Assignment: Building an ML API Service
 
 ## Overview
 
